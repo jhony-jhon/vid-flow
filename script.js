@@ -49,7 +49,7 @@ function renderizarVideos(videos) {
       <li class="videos__item">
           <iframe src="${video.url}" title="${video.titulo}" frameborder="0" allowfullscreen></iframe>
           <div class="descricao-video">
-              <img class="img-canal" src="./img/sidebar/${video.imagem}" alt="Logo do Canal" onerror="this.src='./img/sidebar/default-image.png';">
+              <img class="img-canal" src="/img/sidebar/${video.imagem}" alt="Logo do Canal" onerror="this.src='/img/sidebar/default-image.png';">
               <h3 class="titulo-video">${video.titulo}</h3>
               <p class="titulo-canal">${video.descricao}</p>
               <p class="categoria" hidden>${video.categoria}</p>
