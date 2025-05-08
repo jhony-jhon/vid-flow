@@ -1,37 +1,62 @@
-import axios from "axios"; 
+import axios from "axios";
 
 const containerVideos = document.querySelector(".videos__container");
+const cacheVideos = new Map(); // Cache para armazenar os vídeos
 
 async function buscarEMostrarVideos() {
-
   const urlVideos = import.meta.env.VITE_URL_VIDEOS;
-  
+
   console.log(import.meta.env.PROD);
   console.log(urlVideos);
 
-  try {
-    const busca = await axios.get(urlVideos);
-    const videos = busca.data;
+  if (cacheVideos.has(urlVideos)) {
+    // Use o cache se os vídeos já foram carregados
+    renderizarVideos(cacheVideos.get(urlVideos));
+    return;
+  }
 
-    videos.forEach((video) => {
-      if (video.categoria == "") {
-        throw new Error("Vídeo não tem categoria");
-      }
-      containerVideos.innerHTML += `
-                <li class="videos__item">
-                    <iframe src="${video.url}" title="${video.titulo}" frameborder="0" allowfullscreen></iframe>
-                    <div class="descricao-video">
-                        <img class="img-canal" src="${video.imagem} alt="Logo do Canal">
-                        <h3 class="titulo-video">${video.titulo}</h3>
-                        <p class="titulo-canal">${video.descricao}</p>
-                        <p class="categoria" hidden>${video.categoria}</p>
-                    </div>
-                </li>
-                `;
-    });
+  try {
+    const videos = await fazerRequisicaoComRetry(urlVideos);
+    cacheVideos.set(urlVideos, videos); // Armazena no cache
+    renderizarVideos(videos);
   } catch (error) {
     containerVideos.innerHTML = `<p> Houve um erro ao carregar os vídeos: ${error}</p>`;
   }
+}
+
+async function fazerRequisicaoComRetry(url, retries = 3, delay = 1000) {
+  for (let tentativa = 0; tentativa < retries; tentativa++) {
+    try {
+      const busca = await axios.get(url);
+      return busca.data;
+    } catch (error) {
+      if (error.response?.status === 429 && tentativa < retries - 1) {
+        console.warn(`Erro 429: Tentando novamente em ${delay}ms...`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      } else {
+        throw error;
+      }
+    }
+  }
+}
+
+function renderizarVideos(videos) {
+  videos.forEach((video) => {
+    if (video.categoria == "") {
+      throw new Error("Vídeo não tem categoria");
+    }
+    containerVideos.innerHTML += `
+      <li class="videos__item">
+          <iframe src="${video.url}" title="${video.titulo}" frameborder="0" allowfullscreen></iframe>
+          <div class="descricao-video">
+              <img class="img-canal" src="${video.imagem}" alt="Logo do Canal">
+              <h3 class="titulo-video">${video.titulo}</h3>
+              <p class="titulo-canal">${video.descricao}</p>
+              <p class="categoria" hidden>${video.categoria}</p>
+          </div>
+      </li>
+    `;
+  });
 }
 
 buscarEMostrarVideos();
